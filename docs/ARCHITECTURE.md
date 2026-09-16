@@ -1,0 +1,11 @@
+# Architecture and scope
+
+`pedit.app` serves packaged static files and the local JSON/PDF endpoints using Python's ThreadingHTTPServer. `high_fidelity` handles verified original-stream, embedded-glyph and document-glyph edits. `scan_engine` diagnoses pages and optionally runs OCR. `ocr_subfield` isolates fields. `scan_diff`, `scan_revision_visual` and `scan_visual_match` build local scan patches and preserve reusable RGBA glyphs. `validation` contains boundary/change checks. The browser UI remains native JavaScript, HTML and CSS.
+
+Public preparation changed package-relative imports, branding/version, storage namespace, installed resource lookup and limited safety/persistence glue. The core PDF and raster algorithms are preserved. The historical modules remain large; separation can happen later with behavior coverage.
+
+HTTP flow: `/api/open` copies the source to a random session directory; `/api/page` renders PNG; `/api/page-data` describes objects; `/api/preview` applies pending edits to a temporary document; `/api/export` emits a revised PDF. `/api/save-progress` writes JSON and `/api/resume-progress` reloads it, including after process-memory loss. Baseline PDFs support save-and-continue and history restoration.
+
+Progress schema 1 retains edits, page number templates/overrides/takeovers, current page, baseline id, history, preview settings, tombstones and glyph/block libraries. Glyph assets include image data and anchor/scale metadata. The server treats this as local editor state, not a validated portable project format. UI glyph/block libraries are restored from arrays into Maps; older payloads without libraries load as empty libraries. Restoration is explicitly user-triggered. Startup and refresh always keep the workspace empty; they do not retrieve saved document content.
+
+Local data may include the entire PDF, embedded images, document text, saved glyphs and generated baselines. The server does not encrypt session data or automatically erase it on exit. Filesystem permissions and device security matter. Consult SECURITY.md before working with private data. Original Glyph Reuse is a rendering strategy; it does not transfer copyright or authorize redistribution of document-derived assets.

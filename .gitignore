@@ -1,0 +1,36 @@
+# Runtime data and private inputs; test PDFs are generated in temporary directories.
+*.pdf
+*.pedit
+*.pedit.json
+editor_progress.json
+baseline_*.pdf
+scan_cache/
+sessions/
+private/
+quarantine/
+work/
+visual_results*/
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+credentials*.json
+# Python, build and editor artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+node_modules/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log

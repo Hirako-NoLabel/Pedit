@@ -1,0 +1,24 @@
+name: Bug report
+description: Report a reproducible problem using synthetic data
+body:
+  - type: markdown
+    attributes:
+      value: Do not upload customer PDFs, secrets, saved sessions or unlicensed assets. Security reports belong in private reporting (see SECURITY.md).
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps and synthetic reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Pedit version, OS, Python, browser and optional OCR backend
+    validations:
+      required: true

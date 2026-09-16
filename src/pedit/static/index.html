@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pedit OSS v0.1.0</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div class="brand-copy">
+          <div class="brand-title">Pedit OSS <span class="version">v0.1.0</span></div>
+          <div class="brand-sub">本地修订 · 原文件不覆盖 · Original Glyph Reuse · v0.1.0</div>
+        </div>
+      </div>
+
+      <div class="document-pill" id="documentPill">
+        <span class="document-dot"></span>
+        <span id="topFileName">未打开文件</span>
+      </div>
+
+      <div class="toolbar">
+        <button id="importBtn" class="btn quiet">＋ 导入 PDF</button>
+        <input id="fileInput" type="file" accept="application/pdf,.pdf" hidden />
+        <div class="history-group">
+          <button id="undoBtn" class="icon-btn" disabled title="撤销 Ctrl+Z">↶</button>
+          <button id="redoBtn" class="icon-btn" disabled title="重做 Ctrl+Y">↷</button>
+        </div>
+        <button id="pageNumberBtn" class="btn quiet" disabled title="批量识别、替换或新增页码">批量页码</button>
+        <button id="saveProgressBtn" class="btn quiet" disabled title="保存当前进度，稍后可继续编辑">保存进度</button>
+        <button id="saveContinueBtn" class="btn quiet" disabled title="将当前修改写入新基线后继续编辑">保存并编辑</button>
+        <button id="revisionRecordsBtn" class="btn quiet" disabled title="查看修改清单、历史版本、Undo 和 Redo">修改记录</button>
+        <button id="exportBtn" class="btn dark" disabled title="选择修改项并导出修订版 PDF">导出</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar pages-panel hidden" id="pagesPanel">
+        <div class="panel-head pages-head">
+          <div>
+            <span class="eyebrow">文档</span>
+            <strong>页面</strong>
+          </div>
+          <span id="pageCountBadge" class="badge">0</span>
+        </div>
+        <div id="thumbList" class="thumb-list"></div>
+      </aside>
+
+      <section class="stage" id="stage">
+        <div id="welcome" class="welcome-screen">
+          <div class="welcome-inner" id="dropZone">
+            <div class="welcome-icon">PDF</div>
+            <h1>打开一个 PDF 开始编辑</h1>
+            <p>直接点击页面中的文字或图片进行修订。所有处理均在本机完成，修改清单可在工具中查看，默认不写入 PDF。</p>
+            <button id="welcomeImport" class="btn dark large">＋ 打开 PDF</button>
+            <button id="resumeProgressBtn" class="btn quiet" type="button">恢复进度</button>
+            <div class="drop-hint">或将 PDF 文件拖到这里</div>
+            <div class="welcome-features">
+              <span>电子 PDF 精准修订</span>
+              <span>扫描 PDF OCR 修订</span>
+              <span>多页批量修订</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="viewer" class="viewer hidden">
+          <div class="viewer-toolbar">
+            <div class="toolbar-cluster">
+              <div class="page-nav pill-control">
+                <button id="prevPage" class="mini-btn nav-btn" title="上一页">‹</button>
+                <span class="page-position"><strong id="currentPageLabel">1</strong><span class="slash">/</span><span id="totalPagesLabel">1</span></span>
+                <button id="nextPage" class="mini-btn nav-btn" title="下一页">›</button>
+              </div>
+            </div>
+
+            <div class="toolbar-cluster center-tools">
+              <label class="selection-control" title="图片盖住文字时请选择“只选文字”；Alt+单击可循环选择重叠对象">
+                <span class="control-label">选择</span>
+                <select id="selectionMode">
+                  <option value="smart">智能（文字优先）</option>
+                  <option value="text">只选文字</option>
+                  <option value="image">只选图片</option>
+                  <option value="manual">任意框选（识别 / 编辑）</option>
+                  <option value="manual-add">框选新增文字</option>
+                </select>
+              </label>
+              <button id="snapToggle" class="mini-btn soft-btn active" type="button" title="拖动字块时吸附到原框中心和附近文字基线">吸附：开</button>
+              <button id="objectLayerToggle" class="mini-btn soft-btn" type="button">对象层</button>
+            </div>
+
+            <div class="toolbar-cluster zoom-tools">
+              <div class="pill-control zoom-group">
+                <button class="mini-btn" id="zoomOut" title="缩小">−</button>
+                <span id="zoomLabel" class="zoom-label">100%</span>
+                <button class="mini-btn" id="zoomIn" title="放大">＋</button>
+              </div>
+              <button class="mini-btn soft-btn toolbar-short" id="fitPage" title="适应整页">整页</button><button class="mini-btn soft-btn toolbar-short" id="fitWidth" title="适应页宽">页宽</button>
+              <label class="preview-quality-control" title="自动模式会按显示尺寸、缩放和屏幕像素密度动态请求高清页面"><span>预览</span><select id="previewQuality"><option value="auto">自动</option><option value="standard">标准</option><option value="high">高清</option></select></label>
+              <button class="mini-btn soft-btn toolbar-short" id="cleanPreview" title="净预览：隐藏编辑辅助框">净图</button>
+            </div>
+          </div>
+
+          <div class="page-scroll" id="pageScroll">
+            <div class="canvas-center">
+              <div class="page-wrap" id="pageWrap">
+                <img id="pageImage" class="page-image" alt="PDF page" />
+                <div id="overlayLayer" class="overlay-layer"></div>
+                <div id="loadingMask" class="loading-mask hidden"><div class="loading-card"><div class="spinner"></div><strong id="loadingTitle">处理中…</strong><span id="loadingPercent">0%</span><div class="loading-progress"><i id="loadingProgressBar"></i></div></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="statusbar">
+            <div class="status-left">
+              <span class="status-chip" id="engineStatus"><span class="status-dot ok"></span><span id="engineStatusText">修订模式</span></span>
+              <span id="documentModeHint">Alt + 单击可切换重叠对象</span>
+            </div>
+            <div class="status-right">
+              <span>第 <strong id="statusPageMirror">1</strong> 页</span>
+              <span class="status-sep"></span>
+              <span id="statusZoomMirror">100%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar properties-panel hidden" id="propertiesPanel">
+        <div class="panel-head props-head">
+          <div>
+            <span class="eyebrow">编辑</span>
+            <strong>属性</strong>
+          </div>
+          <span id="objectType" class="badge">未选择</span>
+        </div>
+
+        <div id="emptyProps" class="empty-props">
+          <div class="empty-icon">⌁</div>
+          <strong>选择页面内容</strong>
+          <p id="emptyPropsText">点击文字进行修订，点击图片进行原位替换。</p>
+          <div class="empty-tip" id="emptyPropsTip">图片挡住文字时，将顶部“选择”切换为“只选文字”。</div>
+        </div>
+
+        <div id="textProps" class="props-form hidden">
+          <section class="property-section primary-section">
+            <div class="section-title-row">
+              <div>
+                <span class="eyebrow">内容</span>
+                <h3>修订文字</h3>
+              </div>
+            </div>
+            <div id="scanFieldInfo" class="scan-field-info hidden"><label>OCR 原文</label><div id="ocrOriginal" class="ocr-original"></div><button id="editLine" class="mini-btn soft-btn" type="button">编辑整行</button><label>当前编辑字段</label><div id="currentOcrField" class="ocr-current"></div></div>
+            <label id="replaceLabel" class="hidden">修改为</label><textarea id="textContent" rows="4" class="hero-input"></textarea>
+            <div id="finalGlyphPreviewCard" class="final-glyph-preview hidden">
+              <div class="final-glyph-preview-head"><span>最终字形预览</span><em id="finalGlyphPreviewMode">保持输入字形</em></div>
+              <div id="finalGlyphPreviewText" class="final-glyph-preview-text">—</div>
+              <small id="finalGlyphPreviewHint">生成时使用与这里一致的字形策略；超出原字段时不会再偷偷压扁文字。</small>
+            </div>
+            <div class="run-actions">
+              <button id="runEditBtn" class="run-edit-btn" type="button">
+                <span class="run-play">▶</span>
+                <span id="runEditLabel">开始运行</span>
+              </button>
+            </div>
+            <div id="runProcess" class="run-process" data-state="idle">
+              <div class="run-process-head">
+                <strong id="runStatusTitle">等待运行</strong>
+                <span id="runProgressText">0%</span>
+              </div>
+              <div class="run-progress-track"><span id="runProgressBar"></span></div>
+              <ol class="run-steps" id="runSteps">
+                <li data-step="1"><span>1</span><div><strong>定位字段</strong><small>确认当前字段与页面位置</small></div></li>
+                <li data-step="2"><span>2</span><div><strong>局部 OCR 校验</strong><small>验证字段范围和 OCR 边界</small></div></li>
+                <li data-step="3"><span>3</span><div><strong>生成修订内容</strong><small>生成字段级修订</small></div></li>
+                <li data-step="4"><span>4</span><div><strong>重新渲染页面</strong><small>生成修改后预览</small></div></li>
+                <li data-step="5"><span>5</span><div><strong>验证修改结果</strong><small>确认页面发生实际变化</small></div></li>
+              </ol>
+              <div id="runMessage" class="run-message">修改文字后，点击“开始运行”。</div>
+            </div>
+          </section>
+
+          <details id="manualGeometrySection" class="property-section manual-geometry-section collapsible-section hidden">
+            <summary class="collapsible-summary"><span><small>人工接管</small><strong>框选 / 字块位置</strong></span><em>位置与尺寸</em></summary>
+            <div class="collapsible-body">
+            <div class="scan-tune-tools"><button id="objectLockBtn" class="mini-btn soft-btn" type="button">锁定</button></div>
+            <div class="geometry-grid">
+              <label>X <input id="blockX" type="number" step="0.1" /></label>
+              <label>Y <input id="blockY" type="number" step="0.1" /></label>
+              <label>W <input id="blockW" type="number" min="1" step="0.1" /></label>
+              <label>H <input id="blockH" type="number" min="1" step="0.1" /></label>
+            </div>
+            <div class="manual-block-actions">
+              <button id="reRecognizeBlock" class="mini-btn soft-btn" type="button">重新识别此框</button>
+              <button id="convertFreeText" class="mini-btn soft-btn" type="button">转为新增字块</button>
+              <button id="openDetailEditor" class="mini-btn soft-btn" type="button">局部放大编辑</button>
+              <button id="resetBlockPosition" class="mini-btn soft-btn" type="button">复位位置</button>
+            </div>
+            <small class="manual-geometry-note">可直接拖动蓝色字块；边缘和四角可缩放。方向键 1px，Shift+方向键 5px，Alt+方向键 0.1px。</small>
+            </div>
+          </details>
+
+          <section class="property-section fidelity-section">
+            <div class="section-title-row compact">
+              <div>
+                <span class="eyebrow">结果</span>
+                <h3>修订检查</h3>
+              </div>
+            </div>
+            <div id="precisionMode" class="precision-mode" data-mode="exact">未修改：保留原 PDF 文字指令</div>
+          </section>
+
+
+          <details id="compareSection" class="property-section compare-section collapsible-section hidden">
+            <summary class="collapsible-summary"><span><small>对比</small><strong>局部修改前 / 后</strong></span><em>点击展开</em></summary>
+            <div class="collapsible-body">
+            <div class="compare-preview-wrap">
+              <img id="compareImage" alt="局部修改前后对比" />
+            </div>
+            <div class="compare-note" id="compareNote">运行完成后自动生成局部放大对比。</div>
+            </div>
+          </details>
+
+
+          <details id="scanTuneSection" class="property-section scan-tune-section collapsible-section hidden">
+            <summary class="collapsible-summary"><span><small>扫描文字</small><strong>视觉微调</strong></span><em id="scanTuneSummary">自动 · 未调整</em></summary>
+            <div class="collapsible-body">
+            <div class="scan-tune-tools"><button id="scanTuneCopy" class="mini-btn soft-btn" type="button">复制参数</button><button id="scanTunePaste" class="mini-btn soft-btn" type="button">粘贴参数</button></div>
+            <div class="scan-tune-note">自动匹配为基准。只微调当前替换字符；非目标区域仍由页面保护门强制保持原像素。已确认过的单字符会优先复用当前文档成品字，尽量保持同字同形。</div>
+            <div class="finished-glyph-card">
+              <div class="finished-glyph-head"><div><strong>成品字复用</strong><small>把已经调好的最终字形直接复用到当前 PDF 其他位置</small></div><select id="finishedGlyphMode"><option value="original">1:1 原文复用</option><option value="fit">允许缩放适配</option></select></div>
+              <div class="finished-glyph-actions"><button id="copyFinishedGlyph" class="mini-btn soft-btn" type="button">复制成品字</button><button id="pasteFinishedGlyph" class="mini-btn soft-btn" type="button">粘贴成品字</button></div>
+              <div class="finished-block-actions"><button id="saveFinishedBlock" class="mini-btn soft-btn" type="button">保存成品字组 / 短语</button><button id="pasteFinishedBlock" class="mini-btn soft-btn" type="button">粘贴为可移动字块</button></div>
+              <div id="finishedGlyphLibrary" class="finished-glyph-library"><span class="finished-glyph-empty">当前文档字库为空</span></div>
+              <div id="finishedBlockLibrary" class="finished-block-library"><span class="finished-glyph-empty">当前文档字组为空</span></div>
+              <small class="finished-glyph-note">默认使用 1:1 原文复用：保留源字像素尺寸、基线偏移和清晰度，只做位置平移；不会自动缩放或二次锐化/柔化。目标字符槽尺寸不匹配时会提示，只有主动切换“允许缩放适配”才会重采样。</small>
+            </div>
+            <div class="tune-row">
+              <label for="scanFontChoice"><span>字形候选</span><span class="tune-label-actions"><output>手动可选</output><button class="tune-reset-btn" data-tune-reset="scanFontChoice" type="button">复位</button></span></label>
+              <select id="scanFontChoice">
+                <option value="input">保持输入字形（所见即所得）</option>
+                <option value="auto">自动匹配 / 同行同字优先</option>
+                <option value="times">Times / 衬线数字</option>
+                <option value="arial">Arial / 无衬线数字</option>
+                <option value="calibri">Calibri</option>
+                <option value="cambria">Cambria</option>
+                <option value="simsun">宋体</option>
+                <option value="msyh">微软雅黑</option>
+              </select>
+              <small>“保持输入字形”会固定使用界面预览对应的无衬线字体，不再自动换字体或明显横向压缩；“自动匹配”仍可用于追求原扫描风格。</small>
+            </div>
+
+            <div class="tune-row">
+              <label for="scanSizeScale"><span>大小（整体缩放）</span><span class="tune-label-actions"><output id="scanSizeValue">100%</output><input id="scanSizeInput" class="tune-value-input" type="number" min="50" max="150" step="0.1" value="100" /><button class="tune-reset-btn" data-tune-reset="scanSizeScale" type="button">复位</button></span></label>
+              <div class="tune-direction"><span>更小</span><span>更大</span></div><input id="scanSizeScale" type="range" min="50" max="150" step="0.1" value="100" />
+            </div>
+            <div class="tune-row">
+              <label for="scanWidthScale"><span>宽度（横向伸缩）</span><span class="tune-label-actions"><output id="scanWidthValue">100%</output><input id="scanWidthInput" class="tune-value-input" type="number" min="50" max="150" step="0.1" value="100" /><button class="tune-reset-btn" data-tune-reset="scanWidthScale" type="button">复位</button></span></label>
+              <div class="tune-direction"><span>更窄</span><span>更宽</span></div><input id="scanWidthScale" type="range" min="50" max="150" step="0.1" value="100" />
+            </div>
+            <div class="tune-grid">
+              <div class="tune-row compact-tune">
+                <label for="scanXOffset"><span>左右位置</span><span class="tune-label-actions"><output id="scanXValue">0 px</output><input id="scanXInput" class="tune-value-input" type="number" min="-600" max="600" step="0.1" value="0" /><button class="tune-reset-btn" data-tune-reset="scanXOffset" type="button">复位</button></span></label>
+                <div class="tune-direction"><span>左移</span><span>右移</span></div><input id="scanXOffset" type="range" min="-600" max="600" step="0.1" value="0" />
+              </div>
+              <div class="tune-row compact-tune">
+                <label for="scanYOffset"><span>上下位置</span><span class="tune-label-actions"><output id="scanYValue">0 px</output><input id="scanYInput" class="tune-value-input" type="number" min="-600" max="600" step="0.1" value="0" /><button class="tune-reset-btn" data-tune-reset="scanYOffset" type="button">复位</button></span></label>
+                <div class="tune-direction"><span>上移</span><span>下移</span></div><input id="scanYOffset" type="range" min="-600" max="600" step="0.1" value="0" />
+              </div>
+            </div>
+            <div class="tune-row">
+              <label for="scanDarkness"><span>颜色深浅</span><span class="tune-label-actions"><output id="scanDarknessValue">自动</output><input id="scanDarknessInput" class="tune-value-input" type="number" min="-100" max="100" step="0.1" value="0" /><button class="tune-reset-btn" data-tune-reset="scanDarkness" type="button">复位</button></span></label>
+              <div class="tune-direction"><span>更浅</span><span>更深</span></div><input id="scanDarkness" type="range" min="-100" max="100" step="0.1" value="0" />
+            </div>
+            <div class="tune-row">
+              <label for="scanStroke"><span>笔画粗细</span><span class="tune-label-actions"><output id="scanStrokeValue">自动</output><input id="scanStrokeInput" class="tune-value-input" type="number" min="-6" max="6" step="0.1" value="0" /><button class="tune-reset-btn" data-tune-reset="scanStroke" type="button">复位</button></span></label>
+              <div class="tune-direction"><span>更细</span><span>更粗</span></div><input id="scanStroke" type="range" min="-6" max="6" step="0.1" value="0" />
+            </div>
+            <div class="tune-row">
+              <label for="scanClarity"><span>清晰度（边缘软硬）</span><span class="tune-label-actions"><output id="scanClarityValue">自动</output><input id="scanClarityInput" class="tune-value-input" type="number" min="-100" max="100" step="0.1" value="0" /><button class="tune-reset-btn" data-tune-reset="scanClarity" type="button">复位</button></span></label>
+              <div class="tune-direction"><span>更柔</span><span>更清晰</span></div><input id="scanClarity" type="range" min="-100" max="100" step="0.1" value="0" />
+              <small>自动模式不再主动模糊；仅在你手动调整时改变边缘软硬。</small>
+            </div>
+
+            <div class="tune-divider"></div>
+            <div class="tune-row cleanup-tune">
+              <label for="scanCleanup"><span>旧字清理</span><span class="tune-label-actions"><output id="scanCleanupValue">50</output><input id="scanCleanupInput" class="tune-value-input" type="number" min="0" max="100" step="0.1" value="50" /><button class="tune-reset-btn" data-tune-reset="scanCleanup" type="button">复位</button></span></label>
+              <div class="tune-direction"><span>清理更弱</span><span>清理更强</span></div><input id="scanCleanup" type="range" min="0" max="100" step="0.1" value="50" />
+              <small>残影时增强；水印/线条附近建议保守</small>
+            </div>
+            <div class="tune-row">
+              <label for="scanEdgeBlend"><span>背景边缘融合</span><span class="tune-label-actions"><output id="scanEdgeBlendValue">0</output><input id="scanEdgeBlendInput" class="tune-value-input" type="number" min="-100" max="100" step="0.1" value="0" /><button class="tune-reset-btn" data-tune-reset="scanEdgeBlend" type="button">复位</button></span></label>
+              <div class="tune-direction"><span>融合更少</span><span>融合更多</span></div><input id="scanEdgeBlend" type="range" min="-100" max="100" step="0.1" value="0" />
+            </div>
+            <button id="applyScanTune" class="scope-button tune-apply primary-black-action" type="button">
+              <span><strong>应用微调并重新预览</strong><small>仍执行页面保护与邻字碰撞检查</small></span><span class="chevron">›</span>
+            </button>
+            </div>
+          </details>
+
+          <section class="property-section scope-section">
+            <div class="section-title-row compact">
+              <div>
+                <span class="eyebrow">范围</span>
+                <h3>应用页面</h3>
+              </div>
+            </div>
+            <button id="batchApplyBtn" class="scope-button primary-black-action">
+              <span>
+                <strong>批量应用到其他页面</strong>
+                <small>查找相同文字和相同位置字段</small>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+          </section>
+
+          <details class="advanced-card">
+            <summary>
+              <span>高级设置</span>
+              <small>字体、字号、颜色与坐标</small>
+            </summary>
+            <div class="advanced-body">
+              <div class="field-row">
+                <div><label>字号</label><input id="fontSize" type="number" min="1" step="0.1" /></div>
+                <div><label>颜色</label><input id="fontColor" type="color" /></div>
+              </div>
+
+              <label>原字体</label>
+              <input id="fontName" type="text" readonly />
+
+              <div class="field-row">
+                <div><label>X 坐标</label><input id="textX" type="number" step="0.5" /></div>
+                <div><label>Y 坐标</label><input id="textY" type="number" step="0.5" /></div>
+              </div>
+              <div class="advanced-note">电子 PDF 可保留原排版参数；扫描 PDF 会自动校验字高、整体宽度、基线与字距；请结合局部放大对比判断视觉融合质量。</div>
+            </div>
+          </details>
+
+          <div class="object-actions"><button id="deleteTextBtn" class="danger-action" type="button">删除此文字</button><button id="resetTextBtn" class="text-action">恢复此处原文</button></div>
+        </div>
+
+        <div id="imageProps" class="props-form hidden">
+          <section class="property-section primary-section">
+            <span class="eyebrow">图片</span>
+            <h3>原位替换</h3>
+            <div class="image-preview-box"><img id="replacementPreview" class="hidden" /><span id="imagePlaceholder">原图片区域</span></div>
+            <label class="file-picker-label" for="imageInput">选择替换图片</label>
+            <input id="imageInput" class="native-file-input" type="file" accept="image/png,image/jpeg,image/webp" />
+            <div id="imageDpiInfo" class="image-dpi-info">选择图片后会显示原图尺寸、目标框与估算有效 DPI。</div>
+          </section>
+
+          <details class="property-section collapsible-section">
+            <summary class="collapsible-summary"><span><small>图片</small><strong>高级设置</strong></span><em>适应方式</em></summary>
+            <div class="collapsible-body">
+              <label>适应方式</label>
+              <select id="imageFit">
+                <option value="contain">完整显示（保持比例）</option>
+                <option value="cover">填满原区域</option>
+              </select>
+            </div>
+          </details>
+          <div class="object-actions"><button id="deleteImageBtn" class="danger-action" type="button">删除此图片</button><button id="resetImageBtn" class="text-action">取消此处替换</button></div>
+        </div>
+
+        <div id="changeSummary" class="change-summary">
+          <div class="summary-file">
+            <span>当前文件</span>
+            <strong id="fileNameLabel">—</strong>
+          </div>
+          <div class="summary-change">
+            <span>本次修改</span>
+            <strong id="changeCount">0 处</strong>
+          </div>
+        </div>
+        <section id="objectLayerPanel" class="object-layer-panel hidden">
+          <div class="object-layer-head"><strong>当前页对象</strong><button id="objectLayerClose" class="mini-btn soft-btn" type="button">关闭</button></div>
+          <div class="object-layer-filter"><button id="objectLayerEditedOnly" class="mini-btn soft-btn active" type="button">已编辑 / 手动</button><button id="objectLayerAll" class="mini-btn soft-btn" type="button">全部识别</button></div>
+          <div id="objectLayerList" class="object-layer-list"></div>
+        </section>
+      </aside>
+    </main>
+
+    <div id="batchModal" class="modal-backdrop hidden">
+      <div class="modal-card batch-modal">
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">批量处理</span>
+            <h2>选择要应用的页面</h2>
+            <p id="batchFieldSummary">—</p>
+          </div>
+          <button id="batchClose" class="icon-btn modal-close" title="关闭">×</button>
+        </div>
+
+        <div class="batch-rule">
+          <label class="check-line">
+            <input id="batchSamePosition" type="checkbox" checked />
+            <span>
+              <strong>只匹配同一模板字段</strong>
+              <small>文字相同，并且位置、字号和字体相近</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="batch-toolbar">
+          <div class="quick-select">
+            <button id="batchSelectAll" class="mini-btn soft-btn">全选</button>
+            <button id="batchSelectNone" class="mini-btn soft-btn">清空</button>
+            <button id="batchInvert" class="mini-btn soft-btn">反选</button>
+          </div>
+          <div class="range-pick">
+            <input id="batchRange" type="text" placeholder="例如 1-5,8,12-20" />
+            <button id="batchRangeApply" class="mini-btn soft-btn">选择页码</button>
+          </div>
+        </div>
+
+        <div id="batchScanStatus" class="batch-status">正在扫描匹配页面…</div>
+        <div id="batchPageGrid" class="batch-page-grid"></div>
+        <div id="batchResult" class="batch-result hidden"></div>
+
+        <div class="modal-actions">
+          <button id="batchRescan" class="btn quiet">重新扫描</button>
+          <button id="batchTrial" class="btn quiet">试运行 3 页</button>
+          <button id="batchConfirm" class="btn dark">应用到选中页面</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="deleteModal" class="modal-backdrop hidden">
+      <div class="modal-card delete-modal">
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">删除</span>
+            <h2 id="deleteModalTitle">删除选中对象</h2>
+            <p id="deleteModalSummary">先预览，再决定是否批量删除相同内容。</p>
+          </div>
+          <button id="deleteModalClose" class="modal-close" type="button">×</button>
+        </div>
+        <div class="delete-source-card" id="deleteSourceCard"></div>
+        <div class="batch-toolbar">
+          <div class="quick-select">
+            <button id="deleteCurrentOnly" class="mini-btn soft-btn" type="button">仅删除当前</button>
+            <button id="deleteFindMatches" class="mini-btn soft-btn" type="button">查找相同项</button>
+          </div>
+          <div class="range-pick">
+            <input id="deleteRange" type="text" placeholder="页范围，例如 1-5,8,12-20" />
+            <button id="deleteRangeApply" class="mini-btn soft-btn" type="button">选择页码</button>
+          </div>
+        </div>
+        <div id="deleteStatus" class="batch-status">默认只删除当前选中对象。</div>
+        <div id="deleteMatchGrid" class="delete-match-grid"></div>
+        <div class="modal-actions">
+          <button id="deleteCancel" class="btn quiet" type="button">取消</button>
+          <button id="deleteConfirm" class="btn danger" type="button">删除选中项</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pageNumberModal" class="modal-backdrop hidden">
+      <div class="modal-card page-number-modal">
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">页码处理</span>
+            <h2>数字槽批量页码编辑</h2>
+            <p>只处理原页码里的数字：识别“第几页”后批量填充当前页序列；识别“共几页”后统一填充你输入的总页数。固定的“第 / 页 / 共 / /”不重绘。OCR 只负责找数字位置，数字内容完全由你设置。</p>
+          </div>
+          <button id="pageNumberClose" class="icon-btn modal-close" title="关闭">×</button>
+        </div>
+        <!-- legacy regression markers: 模板式批量页码编辑；扫描模板位置；只修改 PDF 中已经存在的页码数字；扫描框选位置；逐页修改原数字 -->
+          <div class="page-number-form">
+          <div class="page-number-guide">
+            <strong>使用方法</strong>
+            <span>① 框选完整页码（如“第57页，共96页”） → ② 选择这个框要修改“当前页 / 总页数 / 两者” → ③ 设置 PDF 范围、当前页起始数字和固定总页数 → ④ 扫描 → ⑤ 只替换原数字。</span>
+          </div>
+
+          <div class="page-number-slot-toolbar"><button id="pageNumberAddSlot" class="mini-btn soft-btn" type="button">＋ 添加框选位置</button><span>默认 A / B，可继续添加 C、D…</span></div>
+          <div class="page-number-slot-grid" id="pageNumberSlotGrid">
+            <section class="page-number-slot-card" data-slot="A">
+              <div class="page-number-slot-head">
+                <div><span class="slot-badge">A</span><strong>页码位置 A</strong></div>
+                <div class="slot-actions"><button id="pageNumberUseA" class="mini-btn soft-btn" type="button">框选位置 A</button><button id="pageNumberClearA" class="mini-btn soft-btn" type="button">清除</button></div>
+              </div>
+              <div id="pageNumberSlotAState" class="page-number-slot-state">未设置</div>
+              <label>这个框修改什么</label>
+              <select id="pageNumberRoleA" class="page-number-role-select">
+                <option value="auto">自动识别</option><option value="current">只改“第几页”</option><option value="total">只改“共几页”</option><option value="both">当前页 + 总页数</option>
+              </select>
+              <label class="pn-advanced hidden">显示格式</label>
+              <select id="pageNumberFormatA" class="hidden">
+                <option value="current">当前页：{current}</option>
+                <option value="current_total_slash">当前 / 总页数：{current}/{total}</option>
+                <option value="current_total_cn">中文：第{current}页，共{total}页</option>
+                <option value="total">仅总页数：{total}</option>
+                <option value="custom">自定义</option>
+              </select>
+              <label class="pn-advanced hidden">模板</label>
+              <input id="pageNumberCustomA" class="page-number-template-input hidden" type="text" value="{current}" />
+              <div class="slot-range-row">
+                <label>适用 PDF 页</label>
+                <div><input id="pageNumberRangeFromA" type="number" min="1" value="1" /><span>—</span><input id="pageNumberRangeToA" type="number" min="1" value="1" /></div>
+              </div>
+              <label class="slot-check"><input id="pageNumberAllowAddA" type="checkbox" /> 未识别到原页码时允许按模板新增</label>
+            </section>
+
+            <section class="page-number-slot-card" data-slot="B">
+              <div class="page-number-slot-head">
+                <div><span class="slot-badge">B</span><strong>页码位置 B</strong></div>
+                <div class="slot-actions"><button id="pageNumberUseB" class="mini-btn soft-btn" type="button">框选位置 B</button><button id="pageNumberClearB" class="mini-btn soft-btn" type="button">清除</button></div>
+              </div>
+              <div id="pageNumberSlotBState" class="page-number-slot-state">未设置</div>
+              <label>这个框修改什么</label>
+              <select id="pageNumberRoleB" class="page-number-role-select">
+                <option value="auto">自动识别</option><option value="current">只改“第几页”</option><option value="total">只改“共几页”</option><option value="both">当前页 + 总页数</option>
+              </select>
+              <label class="pn-advanced hidden">显示格式</label>
+              <select id="pageNumberFormatB" class="hidden">
+                <option value="current">当前页：{current}</option>
+                <option value="current_total_slash">当前 / 总页数：{current}/{total}</option>
+                <option value="current_total_cn">中文：第{current}页，共{total}页</option>
+                <option value="total">仅总页数：{total}</option>
+                <option value="custom">自定义</option>
+              </select>
+              <label class="pn-advanced hidden">模板</label>
+              <input id="pageNumberCustomB" class="page-number-template-input hidden" type="text" value="{current}" />
+              <div class="slot-range-row">
+                <label>适用 PDF 页</label>
+                <div><input id="pageNumberRangeFromB" type="number" min="1" value="1" /><span>—</span><input id="pageNumberRangeToB" type="number" min="1" value="1" /></div>
+              </div>
+              <label class="slot-check"><input id="pageNumberAllowAddB" type="checkbox" /> 未识别到原页码时允许按模板新增</label>
+            </section>
+          </div>
+
+          <div class="page-number-config-card">
+            <div class="field-row">
+              <div><label>实际 PDF 起始页</label><input id="pageNumberFrom" type="number" min="1" value="1" /></div>
+              <div><label>实际 PDF 结束页</label><input id="pageNumberTo" type="number" min="1" value="1" /></div>
+            </div>
+            <div class="field-row">
+              <div><label>当前页起始数字</label><input id="pageNumberStart" type="number" value="1" /></div>
+              <div><label>递增步长</label><input id="pageNumberStep" type="number" value="1" step="1" /></div>
+              <div><label>当前页结束数字</label><input id="pageNumberEnd" type="text" readonly value="1" /></div>
+            </div>
+            <div class="field-row page-number-total-row">
+              <div class="hidden">
+                <label>总页数来源</label>
+                <select id="pageNumberTotalMode">
+                  <option value="range">按编号范围自动计算</option>
+                  <option value="pdf">使用 PDF 总页数</option>
+                  <option value="manual">手动输入总页数</option>
+                </select>
+              </div>
+              <div><label>“共几页”固定填充数字</label><input id="pageNumberTotalValue" type="number" min="1" value="1" /></div>
+            </div>
+            <div id="pageNumberPreviewSummary" class="page-number-preview-summary">—</div>
+          </div>
+
+          <div class="page-number-actions">
+            <button id="pageNumberScan" class="btn quiet" title="扫描原页码数字">识别原页码数字</button>
+            <button id="pageNumberTrial" class="btn quiet" disabled>试运行 3 页</button>
+            <button id="pageNumberAnomaly" class="btn quiet" disabled>只看异常页</button>
+            <button id="pageNumberUndoBatch" class="btn quiet" disabled>撤销上次页码批量</button>
+            <button id="pageNumberApply" class="btn dark" disabled>批量替换原数字</button>
+          </div>
+          <div id="pageNumberStatus" class="batch-status">请先框选至少一个页码区域。</div>
+          <div id="pageNumberResults" class="page-number-results"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="detailEditorModal" class="modal-backdrop hidden">
+      <div class="modal-card detail-editor-modal">
+        <div class="modal-head"><div><span class="eyebrow">局部编辑</span><h2>局部放大编辑</h2><p>拖动字块调整位置；配合右侧 X/Y/W/H 做 0.1 精调。</p></div><button id="detailEditorClose" class="icon-btn modal-close" title="关闭">×</button></div>
+        <div class="detail-toolbar"><button class="mini-btn soft-btn" data-detail-zoom="3">300%</button><button class="mini-btn soft-btn active" data-detail-zoom="4">400%</button><button class="mini-btn soft-btn" data-detail-zoom="5">500%</button><span id="detailEditorInfo">—</span></div>
+        <div id="detailStage" class="detail-stage"><canvas id="detailCanvas"></canvas><div id="detailObject" class="detail-object hidden"></div></div>
+        <div class="modal-actions"><button id="detailEditorDone" class="btn dark">完成</button></div>
+      </div>
+    </div>
+
+    <div id="changeLogModal" class="modal-backdrop hidden">
+      <div class="modal-card change-log-modal revision-records-modal">
+        <div class="modal-head">
+          <div>
+            <span class="eyebrow">修订记录</span>
+            <h2>修改记录</h2>
+            <p id="changeLogSummary">查看本次修改清单或历史版本</p>
+          </div>
+          <button id="changeLogClose" class="icon-btn modal-close" title="关闭">×</button>
+        </div>
+        <div class="revision-record-tabs" role="tablist" aria-label="修改记录">
+          <button id="revisionTabChanges" class="mini-btn soft-btn active" type="button" role="tab" aria-selected="true">修改清单</button>
+          <button id="revisionTabHistory" class="mini-btn soft-btn" type="button" role="tab" aria-selected="false">历史版本</button>
+        </div>
+        <section id="revisionChangesPanel" class="revision-tab-panel" role="tabpanel">
+        <div class="revision-notice">导出为新 PDF，原文件不会被覆盖。</div>
+        <div class="change-log-toolbar">
+          <div class="change-log-filters" id="changeLogFilters">
+            <button type="button" class="mini-btn soft-btn active" data-change-filter="all">全部</button>
+            <button type="button" class="mini-btn soft-btn" data-change-filter="success">已成功</button>
+            <button type="button" class="mini-btn soft-btn" data-change-filter="anomaly">异常</button>
+            <button type="button" class="mini-btn soft-btn" data-change-filter="manual">人工修改</button>
+            <button type="button" class="mini-btn soft-btn" data-change-filter="undone">已撤销</button>
+          </div>
+          <div class="change-log-render-actions">
+            <button id="renderCurrentPageBtn" type="button" class="mini-btn soft-btn">渲染本页</button>
+            <button id="renderNextAnomalyBtn" type="button" class="mini-btn soft-btn">渲染本页并跳到下一异常页</button>
+          </div>
+        </div>
+        <div id="exportSelectTools" class="export-select-tools hidden">
+          <span>导出选择：</span>
+          <button id="exportSelectAll" type="button" class="mini-btn soft-btn">全选</button>
+          <button id="exportSelectNone" type="button" class="mini-btn soft-btn">取消全选</button>
+          <button id="exportSelectInvert" type="button" class="mini-btn soft-btn">反选</button>
+          <button id="exportSelectAnomaly" type="button" class="mini-btn soft-btn">只选异常页</button>
+          <button id="exportSelectCurrent" type="button" class="mini-btn soft-btn">只选当前页</button>
+          <small>仅控制哪些修改写入导出 PDF，未选页面仍保留原始内容。</small>
+        </div>
+        <div class="change-log-help">普通查看时，勾选修改可撤销；导出界面中，勾选项表示本次要写入 PDF 的修改。</div>
+        <div id="changeLogList" class="change-log-list"></div>
+        <div class="modal-actions change-log-actions">
+          <button id="changeLogUndoSelected" class="btn quiet" disabled>撤销选中修改</button>
+          <button id="changeLogRestoreBeforeSelected" class="btn quiet" disabled>回到选中修改前</button>
+          <span class="history-action-spacer"></span>
+          <button id="changeLogCancel" class="btn quiet">关闭</button>
+          <button id="changeLogConfirm" class="btn dark">导出修订版</button>
+        </div>
+        </section>
+        <section id="revisionHistoryPanel" class="revision-tab-panel hidden" role="tabpanel">
+          <div class="history-help">每次成功修改、批量操作、删除和批量页码编辑都会自动形成历史节点。选择任意节点即可直接返回，不需要连续点击撤销。</div>
+          <p id="historySummary" class="revision-history-summary">暂无历史记录</p>
+          <div id="historyList" class="version-history-list"></div>
+          <div class="modal-actions history-modal-actions">
+            <button id="historyRename" class="btn quiet" disabled>命名此节点</button>
+            <span class="history-action-spacer"></span>
+            <button id="historyCancel" class="btn quiet">关闭</button>
+            <button id="historyRestore" class="btn dark" disabled>返回到此版本</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
