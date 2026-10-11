@@ -1,0 +1,23 @@
+# v2.3.9 修改文件清单
+
+- `app.py`
+  - 扫描编辑请求透传 `visualAdjust`。
+  - 工作目录和健康检查版本更新到 2.3.9。
+- `scan_revision_visual.py`
+  - 新增视觉参数标准化、alpha 字形微调、字体候选限制。
+  - 新增大小、宽度、位置、深浅、笔画、柔化控制。
+  - 新增旧字清理强度和背景边缘融合。
+  - 所有手动调整仍经过页面保护、长线保护和邻字碰撞检查。
+- `static/index.html`
+  - 新增“扫描文字 → 视觉微调”面板。
+- `static/styles.css`
+  - 新增视觉微调控件样式。
+- `static/app.js`
+  - 新增视觉参数读写、状态比较、恢复自动、应用微调。
+  - 预览、导出、批量应用均保存同一组 `visualAdjust`。
+- `tests/test_v239_manual_tuning.py`
+  - 新增 v2.3.9 专项测试。
+- `README.md`
+- `CHANGELOG_V2.3.9.md`
+- `MODIFIED_FILES_V2.3.9.md`
+- `TEST_REPORT_V2.3.9.md`

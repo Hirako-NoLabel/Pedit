@@ -81,6 +81,10 @@ scripts/           release checks and installed-package smoke test
 
 See [CONTRIBUTING](CONTRIBUTING.md), [SECURITY](SECURITY.md), [CODE_OF_CONDUCT](CODE_OF_CONDUCT.md), [CHANGELOG](CHANGELOG.md), [ROADMAP](ROADMAP.md) and [validation](docs/VALIDATION.md). Public versioning starts at v0.1.0.
 
+## This repository
+
+Public home of the PDF editor (AGPL-3.0-or-later). `docs/archive/` keeps older pre-Pedit snapshots (local v2.3.x / former private `pdf-precision-editor`) only where they differ from the current code — not part of a release; excluded from release checks and lint. See [docs/history.md](docs/history.md).
+
 ## License
 
 Pedit is licensed under AGPL-3.0-or-later.
