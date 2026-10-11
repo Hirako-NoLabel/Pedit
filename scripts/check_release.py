@@ -5,7 +5,8 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-IGNORED = {'.git', '.venv', 'venv', '__pycache__', '.pytest_cache', '.ruff_cache', 'build', 'dist'}
+# docs/archive holds pre-Pedit snapshots (v2.3.x); not part of a release.
+IGNORED = {'archive', '.git', '.venv', 'venv', '__pycache__', '.pytest_cache', '.ruff_cache', 'build', 'dist'}
 FORBIDDEN = {'.pdf', '.pem', '.key', '.pyc', '.pyo', '.ttf', '.otf', '.ttc', '.woff', '.woff2', '.onnx', '.exe', '.dll', '.png', '.jpg', '.jpeg'}
 PATTERNS = {
     'private-key': re.compile(r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),

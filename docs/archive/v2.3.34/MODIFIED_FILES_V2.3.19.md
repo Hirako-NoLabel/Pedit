@@ -1,0 +1,24 @@
+# Modified files v2.3.19
+
+- `static/index.html`
+  - 页码模板操作改为“框选位置 A / B”。
+  - 更新页码流程说明和扫描按钮文案。
+  - 版本更新至 v2.3.19。
+- `static/app.js`
+  - 新增页码框选交互与框选 OCR 捕获流程。
+  - 页码模板保存用户矩形、识别数字组和源页样式。
+  - 扫描后按每页真实数字坐标建立修改任务。
+  - 当前页 / 总页数优先拆成数字子字段原位替换。
+  - 电子页数字子字段改走页码专用局部替换，避免重复文本定位冲突。
+- `static/styles.css`
+  - 新增页码框选矩形、十字光标和字段识别状态样式。
+- `app.py`
+  - 新增 `_page_number_box_capture()`。
+  - 新增 `/api/page-number-template/capture`。
+  - 框选模板优先从目标页框内提取真实字符坐标。
+  - 数字局部替换支持 `tightNumeric`，保持同位数字尺寸和 baseline。
+  - 服务版本更新至 2.3.19。
+- `tests/test_v2319_page_number_box_anchor.py`
+  - 新增框选、OCR token 合并、真实坐标、空白模板和数字原位替换回归测试。
+- `README.md`
+  - 补充 v2.3.19 使用说明。

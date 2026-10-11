@@ -1,0 +1,27 @@
+# v2.3.22 修改文件
+
+- `static/app.js`
+  - 修改清单多选、逐项撤销、历史前回退
+  - 批量页码普通 `text` 对象注册为可编辑生成对象
+  - 页码人工接管 / 恢复自动
+  - 页面级批量页码清理
+  - 手工移动页码 `text` 时转换为可移动 `page-number-replace`
+- `static/index.html`
+  - 修改清单新增批量撤销与历史回退控制
+  - 版本号更新
+- `static/styles.css`
+  - 修改清单操作区、人工接管状态、页码生成对象样式
+- `static/harness.html`
+  - 版本号更新
+- `app.py`
+  - 服务端与健康检查版本号更新到 2.3.22
+- `start_windows.bat`
+  - 启动版本提示更新
+- `启动编辑器.bat`
+  - 新增 Windows 一键启动入口
+- `README.md`
+  - 新增 v2.3.22 功能说明与启动说明
+- `tests/test_v2322_revision_undo_and_manual_takeover.py`
+  - 新增 v2.3.22 专项测试
+- 若干旧版测试
+  - 仅同步当前版本断言；`test_v239_manual_tuning.py` 同步 v2.3.21 起已放宽到 ±600 的人工移动范围

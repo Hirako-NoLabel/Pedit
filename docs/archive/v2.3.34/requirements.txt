@@ -1,0 +1,7 @@
+PyMuPDF>=1.26,<2
+Pillow>=10,<12
+numpy>=1.26,<3
+opencv-python-headless>=4.9,<5
+rapidocr==3.9.2
+onnxruntime>=1.20,<2
+pytesseract>=0.3.13,<1

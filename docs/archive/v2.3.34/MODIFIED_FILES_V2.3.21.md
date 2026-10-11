@@ -1,0 +1,26 @@
+# Modified files v2.3.21
+
+- `static/app.js`
+  - 通用手动框选 / 新增文字块 / 可移动对象交互。
+  - 对象锁定、吸附、局部放大、成品字组、对象层、批量试运行。
+  - 页码动态位置、独立页范围、单页重定位、异常逻辑校验、空白新增开关。
+  - 页码批量 batch id、删除当前组、撤销上次批量。
+  - 批量页码对象直接点击选中和二次编辑修复。
+- `static/index.html` / `static/harness.html`
+  - v2.3.21 版本信息。
+  - 页码位置独立适用范围、允许新增开关、撤销页码批量按钮。
+  - 通用手动控制相关 UI。
+- `static/styles.css`
+  - 手动字块变换框、页码范围、异常状态、结果操作按钮等样式。
+- `app.py`
+  - v2.3.21 版本信息。
+  - 自由文字块后端支持。
+  - 页码模板扫描支持每位置 applyFrom/applyTo 与 page-specific override。
+- `scan_revision_visual.py`
+  - 扩大人工拖动后的扫描字块 X/Y 调整范围。
+- `tests/test_v2321_manual_control.py`
+  - v2.3.21 通用手动控制回归。
+- `tests/test_v2321_page_number_takeover.py`
+  - 页码分段范围、单页 override、异常保护、手动接管与批量撤销入口回归。
+- `README.md` / `CHANGELOG_V2.3.21.md` / `TEST_REPORT_V2.3.21.md`
+  - 版本说明与测试记录。

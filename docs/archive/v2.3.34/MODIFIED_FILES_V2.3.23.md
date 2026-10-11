@@ -1,0 +1,25 @@
+# MODIFIED FILES v2.3.23
+
+- `static/app.js`
+  - 单数字页码角色推断
+  - 安全整段页码替换兜底
+  - 页码异常校验与生成逻辑调整
+  - 初始/缩放后二次居中
+- `app.py`
+  - 两数字模板的数字组数量门槛修复
+  - 版本号升级至 2.3.23
+- `static/styles.css`
+  - PDF 画布容器稳定居中布局
+- `static/index.html`
+  - 版本号升级
+- `static/harness.html`
+  - 版本号升级
+- `start_windows.bat`
+  - 版本号升级
+- `README.md`
+  - v2.3.23 使用说明
+- `tests/test_v2323_recognition_and_centering.py`
+  - 新增页码识别和初始居中专项回归
+- 若干历史回归测试
+  - 版本断言更新到 v2.3.23
+  - v2.3.20 的“禁止任何整段替换”断言更新为 v2.3.23 的“仅对可信手动框选开放安全兜底”规则
